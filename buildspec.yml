@@ -1,0 +1,53 @@
+version: 0.2
+
+env:
+  secrets-manager:
+    DOCKERHUB_USER: $SM_KEY_DOCKERHUB_USER
+    DOCKERHUB_PASS: $SM_KEY_DOCKERHUB_PASS
+
+phases:
+  install:
+    commands:
+      - echo Install started on `date`
+  pre_build:
+    commands:
+      - echo Pre build started on `date`
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+
+      - echo Cache image pull from ECR
+      - docker pull $IMAGE_REPO_NAME:base || true
+
+      - echo Logging in to Docker Hub...
+      - echo $DOCKERHUB_PASS | docker login -u $DOCKERHUB_USER --password-stdin
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Build api
+
+      - echo Build web
+      - docker build --cache-from $IMAGE_REPO_NAME:base -t $IMAGE_REPO_NAME:$IMAGE_TAG .
+
+  post_build:
+    commands:
+      - echo Post build started on `date`
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+
+      - echo Push to ECR Web
+      - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $IMAGE_REPO_NAME:$IMAGE_TAG
+      - docker push $IMAGE_REPO_NAME:$IMAGE_TAG
+      - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $IMAGE_REPO_NAME:base
+      - docker push $IMAGE_REPO_NAME:base
+
+      - echo Writing image definitions file...
+      - printf '[{"name":"%s","imageUri":"%s"}]' $CONTAINER_NAME $IMAGE_REPO_NAME:$IMAGE_TAG > imagedefinitions.json
+      # - envsubst < taskdef-template.json > taskdef.json
+      # - cat taskdef-template.json | sed -e s@\<ACCOUNT_ID\>@$AWS_ACCOUNT_ID@ > taskdef.json
+      # - cat imagedefinitions.json
+      # - cat taskdef.json
+
+artifacts:
+  files:
+    - imagedefinitions.json
+    # - taskdef.json

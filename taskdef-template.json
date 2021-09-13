@@ -1,0 +1,35 @@
+{
+  "executionRoleArn": "arn:aws:iam::${AWS_ACCOUNT_ID}:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "${CONTAINER_NAME}",
+      "image": "${IMAGE_REPO_NAME}:${IMAGE_TAG}",
+      "essential": true,
+      "portMappings": [
+        {
+          "hostPort": 443,
+          "protocol": "tcp",
+          "containerPort": 443
+        }
+      ],
+      "mountPoints": [
+        {
+          "containerPath": "/etc/letsencrypt/live/sample-app.tk/",
+          "sourceVolume": "ssl"
+        }
+      ]
+    }
+  ],
+  "volumes": [
+    {
+      "name": "ssl",
+      "host": {
+        "sourcePath": "/etc/letsencrypt/live/sample-app.tk/"
+      }
+    }
+  ],
+  "requiresCompatibilities": ["EXTERNAL"],
+  "family": "ms-vue-simple-task",
+  "cpu": "256",
+  "memory": "512"
+}

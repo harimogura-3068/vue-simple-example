@@ -1,0 +1,22 @@
+server {
+
+	# listen 443 ssl;
+	listen 80;
+	server_name vue-simple-example.sample-app.tk;
+
+	# ssl_certificate /etc/letsencrypt/live/sample-app.tk/fullchain.pem;
+	# ssl_certificate_key /etc/letsencrypt/live/sample-app.tk/privkey.pem;
+
+	proxy_set_header    Host               $host;
+	proxy_set_header    X-Real-IP          $remote_addr;
+	proxy_set_header    X-Forwarded-For    $proxy_add_x_forwarded_for;
+	proxy_set_header    X-Forwarded-Host   $host;
+	proxy_set_header    X-Forwarded-Server $host;
+	proxy_set_header    X-Forwarded-Port   $server_port;
+	proxy_set_header    X-Forwarded-Proto  $scheme;
+
+	location / {
+		root 		 /usr/share/nginx/html/;
+		index 		 index.html index.htm;
+	}
+}
